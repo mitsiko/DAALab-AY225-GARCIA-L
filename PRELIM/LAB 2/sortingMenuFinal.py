@@ -191,7 +191,9 @@ def main():
         # ================================
         # SAVE SORTED DATA TO FILE
         # ================================
-        output_file = "sorted_output.txt"
+        script_folder = __file__.rsplit("\\", 1)[0]
+        output_file = script_folder + "\\sorted_output.txt"
+
         with open(output_file, "w") as file:
             for num in sorted_data:
                 file.write(str(num) + "\n")
