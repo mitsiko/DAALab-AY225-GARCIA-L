@@ -11,15 +11,19 @@ Users can also select the sorting order: **Ascending** or **Descending**.
 
 The program measures the total time taken to **load the dataset, sort it, and display the sorted results**.  
 
-The dataset is read from a text file named `dataset.txt` located in the **same directory** as this Python script.
+The dataset is read from a text file named `dataset.txt` located in the **same directory** as this Python script.  
+
+Additionally, the program now allows **dynamic dataset size selection**: the user can choose how many numbers from the dataset to sort. The program validates the input to ensure it does not exceed the number of available numbers in the dataset.
 
 ---
 
 ## Features
 - Interactive console menu to choose sorting algorithm and order.  
-- Measures time taken for loading, sorting, and displaying the dataset.  
+- Dynamic dataset size selection: users can sort a subset of the dataset.  
+- Measures time taken for **loading, sorting, and displaying** the dataset.  
 - Works with datasets of any size (limited by your system memory).  
 - Displays the sorted dataset directly in the console.  
+- Input validation ensures only valid dataset sizes are accepted.  
 
 ---
 

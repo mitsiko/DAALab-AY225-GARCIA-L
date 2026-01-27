@@ -3,10 +3,12 @@ import time
 # ==============================
 # FUNCTION: Read data from file
 # ==============================
-def read_data(filename):
+def read_data(filename, dataset_size=None):
     numbers = []
     with open(filename, "r") as file:
-        for line in file:
+        for i, line in enumerate(file):
+            if dataset_size is not None and i >= dataset_size:
+                break
             line = line.strip()
             if line != "":
                 numbers.append(int(line))
@@ -102,6 +104,10 @@ def main():
     script_dir = __file__.rsplit("\\", 1)[0]
     filename = script_dir + "\\dataset.txt"
 
+    # Read total number of available numbers for dynamic input
+    with open(filename, "r") as file:
+        total_data = sum(1 for line in file if line.strip() != "")
+
     while True:
         # ==================================
         # SORTING ALGORITHM MENU (VALIDATED)
@@ -146,13 +152,26 @@ def main():
                 print("Invalid input. Please enter 1 or 2.")
 
         # ================================
+        # DYNAMIC DATASET SIZE INPUT
+        # ================================
+        while True:
+            try:
+                dataset_size = int(input(f"Enter dataset size to sort (1-{total_data}): "))
+                if 1 <= dataset_size <= total_data:
+                    break
+                else:
+                    print(f"Please enter a number between 1 and {total_data}.")
+            except ValueError:
+                print("Invalid input. Please enter an integer.")
+
+        # ================================
         # START TIMER
         # ================================
         print("\nStarting timer... Loading data and sorting.")
         start_time = time.time()
 
-        # Load data after user input
-        numbers = read_data(filename)
+        # Load only the requested dataset size
+        numbers = read_data(filename, dataset_size)
 
         # Execute sorting
         if algo_choice == "1":
