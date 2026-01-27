@@ -22,13 +22,13 @@ The dataset is read from a text file named `data.txt` located in the **same dire
 - Python 3.x installed on your system.  
 - `data.txt` file located in the same folder as the Python script.  
   - The file should contain **one integer per line**, for example:
-  
+``` 
 34
 12
 7
 45
 23
-
+```
 ---
 
 ## How to Run
