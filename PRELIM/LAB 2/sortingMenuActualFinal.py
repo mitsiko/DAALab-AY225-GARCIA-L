@@ -20,8 +20,6 @@ def bubble_sort(arr, ascending=True):
     data = arr.copy()
     n = len(data)
 
-    start_time = time.time()
-
     for i in range(n):
         for j in range(0, n - i - 1):
             if ascending:
@@ -31,8 +29,7 @@ def bubble_sort(arr, ascending=True):
                 if data[j] < data[j + 1]:
                     data[j], data[j + 1] = data[j + 1], data[j]
 
-    end_time = time.time()
-    return data, end_time - start_time
+    return data
 
 
 # ==============================
@@ -40,8 +37,6 @@ def bubble_sort(arr, ascending=True):
 # ==============================
 def insertion_sort(arr, ascending=True):
     data = arr.copy()
-
-    start_time = time.time()
 
     for i in range(1, len(data)):
         key = data[i]
@@ -58,8 +53,7 @@ def insertion_sort(arr, ascending=True):
 
         data[j + 1] = key
 
-    end_time = time.time()
-    return data, end_time - start_time
+    return data
 
 
 # ==============================
@@ -101,25 +95,12 @@ def merge(left, right, ascending):
     return result
 
 
-def timed_merge_sort(arr, ascending=True):
-    data = arr.copy()
-
-    start_time = time.time()
-    sorted_data = merge_sort(data, ascending)
-    end_time = time.time()
-
-    return sorted_data, end_time - start_time
-
-
 # ==============================
 # MAIN PROGRAM (LOOPED)
 # ==============================
 def main():
-    filename = "dataset.txt"
-    numbers = read_data(filename)
-
-    print("\nDATA LOADED SUCCESSFULLY")
-    print("Total numbers:", len(numbers))
+    script_dir = __file__.rsplit("\\", 1)[0]
+    filename = script_dir + "\\dataset.txt"
 
     while True:
         # ==================================
@@ -165,19 +146,31 @@ def main():
                 print("Invalid input. Please enter 1 or 2.")
 
         # ================================
-        # EXECUTE SORTING
+        # START TIMER
         # ================================
+        print("\nStarting timer... Loading data and sorting.")
+        start_time = time.time()
+
+        # Load data after user input
+        numbers = read_data(filename)
+
+        # Execute sorting
         if algo_choice == "1":
-            sorted_data, time_spent = bubble_sort(numbers, ascending)
+            sorted_data = bubble_sort(numbers, ascending)
             algo_name = "Bubble Sort"
-
         elif algo_choice == "2":
-            sorted_data, time_spent = insertion_sort(numbers, ascending)
+            sorted_data = insertion_sort(numbers, ascending)
             algo_name = "Insertion Sort"
-
         elif algo_choice == "3":
-            sorted_data, time_spent = timed_merge_sort(numbers, ascending)
+            sorted_data = merge_sort(numbers, ascending)
             algo_name = "Merge Sort"
+
+        # ================================
+        # DISPLAY SORTED DATA
+        # ================================
+        print("\nSorted Data:")
+        for num in sorted_data:
+            print(num)
 
         # ================================
         # DISPLAY RESULTS
@@ -186,19 +179,13 @@ def main():
         print("Sorting Algorithm:", algo_name)
         print("Sorting Order:", order_name)
         print("Number of elements sorted:", len(sorted_data))
-        print("Time taken (seconds):", time_spent)
 
         # ================================
-        # SAVE SORTED DATA TO FILE
+        # END TIMER (INCLUDES DISPLAY)
         # ================================
-        script_folder = __file__.rsplit("\\", 1)[0]
-        output_file = script_folder + "\\sorted_output.txt"
-
-        with open(output_file, "w") as file:
-            for num in sorted_data:
-                file.write(str(num) + "\n")
-
-        print("Sorted data saved to:", output_file)
+        end_time = time.time()
+        time_taken = end_time - start_time
+        print("Time taken (seconds):", time_taken)
 
 
 # Run the program

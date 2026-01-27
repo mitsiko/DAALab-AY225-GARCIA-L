@@ -3,8 +3,9 @@ import time
 # ========= READ DATA FROM FILE =========
 numbers = []
 
-# Get the path of data.txt in the same folder as this file
-data_file = __file__.replace("FinalFinal.py", "data.txt")
+# Get the directory where this script is located
+script_dir = __file__.rsplit("\\", 1)[0]
+data_file = script_dir + "\\data.txt"
 
 with open(data_file, "r") as file:
     for line in file:
