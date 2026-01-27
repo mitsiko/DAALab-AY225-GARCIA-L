@@ -27,13 +27,13 @@ The dataset is read from a text file named `dataset.txt` located in the **same d
 - Python 3.x installed on your system.  
 - A text file named `dataset.txt` in the same folder as the script. Each line in the file should contain a single integer. Example:
 
+``` 
 34
+12
 7
+45
 23
-32
-5
-62
-
+```
 
 ---
 
