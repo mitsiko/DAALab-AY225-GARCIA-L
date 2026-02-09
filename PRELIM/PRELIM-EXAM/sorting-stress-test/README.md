@@ -139,63 +139,49 @@ The following tables present typical execution times observed during testing. Al
 
 ### Benchmark Results — Sorting Time (seconds)
 
+##### *All benchmark runs were performed by sorting on the ID column to ensure consistent and fair numerical comparisons across algorithms*.
+
 #### N = 1,000 Rows
 | Algorithm | Load Time | Sort Time | Total Time |
 |-----------|-----------|-----------|------------|
-| Bubble Sort | 0.012 | 0.85 | 0.862 |
-| Insertion Sort | 0.012 | 0.42 | 0.432 |
-| Merge Sort | 0.012 | 0.008 | 0.020 |
+| Bubble Sort | 0.1744 | 15.5084 | 15.6828 |
+| Insertion Sort | 0.1875 | 0.0833 | 0.2708 |
+| Merge Sort | 0.1804 | 0.1652 | 0.3456 |
 
 #### N = 10,000 Rows
 | Algorithm | Load Time | Sort Time | Total Time |
 |-----------|-----------|-----------|------------|
-| Bubble Sort | 0.095 | 84.7 | 84.795 |
-| Insertion Sort | 0.095 | 41.2 | 41.295 |
-| Merge Sort | 0.095 | 0.095 | 0.190 |
+| Bubble Sort | 0.1892 | 218.8963 | 219.0855 |
+| Insertion Sort | 0.1809 | 6.2937 | 6.4746 |
+| Merge Sort | 0.1601 | 1.6616 | 1.8217 |
 
 #### N = 100,000 Rows
 | Algorithm | Load Time | Sort Time | Total Time |
 |-----------|-----------|-----------|------------|
-| Bubble Sort | 0.880 | *8,500+ (estimated) | *8,500+ (estimated) |
-| Insertion Sort | 0.880 | 1,540 | 1,540.880 |
-| Merge Sort | 0.880 | 1.150 | 2.030 |
+| Bubble Sort | 0.1693 | 9,247.8990 | 9,248. 0683|
+| Insertion Sort | 0.1954 | 1,613.0014 | 1,613.1968 |
+| Merge Sort | 0.1751 | 14.2987 | 14.4738 |
 
 
 ## Analysis and Observations
 
-### Scaling Characteristics
+The benchmark results reveal stark performance differences that empirically validate theoretical time complexity predictions. Several key patterns emerge from the data:
 
-The benchmark results clearly demonstrate the dramatic scaling differences predicted by theoretical time complexity analysis:
+### Exponential vs. Near-Linear Scaling
+**Bubble Sort** exhibits clear O(n²) behavior: a 10× increase in dataset size results in an approximately 100× increase in execution time (15.5s → 219s → 9,248s). This exponential growth renders it impractical for large datasets, requiring over 2.5 hours to sort 100,000 records.
 
-1. **O(n²) Algorithms (Bubble Sort, Insertion Sort)**:
-   - Exhibit quadratic scaling: 10× increase in N produces ~100× increase in sort time
-   - At N=100,000, these algorithms become practically unusable (hours of execution)
-   - Insertion Sort consistently outperforms Bubble Sort by approximately 2×, reflecting its better constant factors
+**Insertion Sort**, while also O(n²), demonstrates significantly better constant factors. At N=1,000, it outperforms Bubble Sort by 186× (0.083s vs. 15.5s), revealing that algorithms within the same complexity class can have dramatically different real-world performance.
 
-2. **O(n log n) Algorithm (Merge Sort)**:
-   - Shows near-linear scaling for practical dataset sizes
-   - 100× increase in N (1,000 to 100,000) produces only ~140× increase in sort time
-   - Remains efficient even at maximum dataset size (approximately 2 seconds)
+**Merge Sort** showcases near-linear O(n log n) scaling. Its execution time increases by only 8.6× when moving from 10,000 to 100,000 records (1.66s → 14.3s), compared to Insertion Sort's 256× increase over the same range.
 
-### Theoretical vs. Empirical Alignment
+### Practical Performance Thresholds
+The crossover point where algorithmic efficiency becomes critical occurs surprisingly early. At just 1,000 records, Insertion Sort already completes 186× faster than Bubble Sort. By 10,000 records, Merge Sort surpasses Insertion Sort by nearly 4×, and at 100,000 records, this advantage expands to 113×.
 
-The empirical results closely match theoretical predictions:
-
-- **Bubble Sort**: Actual performance follows n²/2 comparison pattern
-- **Insertion Sort**: Performance varies based on input order, with worst-case approaching n²/4
-- **Merge Sort**: Consistent n log n performance regardless of input characteristics
+### Memory-Performance Tradeoffs
+The results illustrate a fundamental computer science tradeoff: Merge Sort's superior time performance comes at the cost of O(n) auxiliary space, while the in-place O(n²) algorithms conserve memory but sacrifice execution speed. This demonstrates why algorithm selection must consider both time and space constraints.
 
 ### Educational Insights
-
-Several key insights emerge from the benchmarking:
-
-1. **Constant Factors Matter**: Even within the same complexity class (O(n²)), Insertion Sort's better constant factors make it consistently faster than Bubble Sort.
-
-2. **Asymptotic Dominance**: For sufficiently large N, Merge Sort's O(n log n) complexity dominates any constant-factor advantages of O(n²) algorithms.
-
-3. **Practical Thresholds**: The crossover point where Merge Sort becomes faster occurs at relatively small N (approximately 50-100 elements), highlighting why efficient algorithms are important even for modest datasets.
-
-4. **Memory-Performance Tradeoff**: Merge Sort requires O(n) auxiliary space, demonstrating the common tradeoff between time and space complexity.
+These benchmarks make abstract complexity theory tangible. The 9,248-second (2.57-hour) Bubble Sort execution versus Merge Sort's 14.3-second completion for 100,000 records provides concrete evidence of why O(n log n) algorithms are essential for modern data processing. The results validate that theoretical analysis accurately predicts real-world performance, with constant factors explaining performance differences within complexity classes.
 
 ## How to Run the Program
 

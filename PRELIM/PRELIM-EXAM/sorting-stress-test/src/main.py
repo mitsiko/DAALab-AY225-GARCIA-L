@@ -31,7 +31,7 @@ class SortingStressTestApp:
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         window_width = int(screen_width * 0.75)
-        window_height = int(screen_height * 0.90)
+        window_height = int(screen_height * 0.75)
         self.root.geometry(f"{window_width}x{window_height}")
         
         # Center the window
