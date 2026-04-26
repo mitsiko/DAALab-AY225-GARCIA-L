@@ -509,7 +509,7 @@
     tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
     tbody tr:hover { background: rgba(255,255,255,0.03); }
     tbody td { padding: 8px 12px; color: var(--text); white-space: nowrap; }
-    tbody td.num  { color: var(--gold); text-align: right; }
+    tbody td.num  { color: var(--gold); text-align: left; }
     tbody td.gA   { color: #4ade80; font-weight: 600; }
     tbody td.gB   { color: #60a5fa; font-weight: 600; }
     tbody td.gC   { color: var(--gold); font-weight: 600; }
@@ -852,20 +852,27 @@
         <input type="number" id="filterAgeMin" placeholder="Min age" min="0" max="100" />
         <input type="number" id="filterAgeMax" placeholder="Max age" min="0" max="100" />
 
-        <!-- Sort dropdown -->
+        <!-- Sort field dropdown (field only, no direction) -->
         <select id="sortSelect">
           <option value="">Default (unsorted)</option>
-          <option value="daily_gaming_hours_desc">Gaming Hours ↓</option>
-          <option value="daily_gaming_hours_asc">Gaming Hours ↑</option>
-          <option value="stress_level_desc">Stress Level ↓</option>
-          <option value="stress_level_asc">Stress Level ↑</option>
-          <option value="depression_score_desc">Depression Score ↓</option>
-          <option value="depression_score_asc">Depression Score ↑</option>
-          <option value="sleep_hours_desc">Sleep Hours ↓</option>
-          <option value="sleep_hours_asc">Sleep Hours ↑</option>
-          <option value="addiction_level_desc">Addiction Level ↓</option>
-          <option value="addiction_level_asc">Addiction Level ↑</option>
+          <option value="daily_gaming_hours">Gaming Hours</option>
+          <option value="stress_level">Stress Level</option>
+          <option value="depression_score">Depression Score</option>
+          <option value="sleep_hours">Sleep Hours</option>
+          <option value="addiction_level">Addiction Level</option>
+          <option value="age">Age</option>
+          <option value="weekly_sessions">Weekly Sessions</option>
+          <option value="years_gaming">Years Gaming</option>
+          <option value="exercise_hours">Exercise Hours</option>
+          <option value="anxiety_score">Anxiety Score</option>
+          <option value="social_interaction_score">Social Score</option>
+          <option value="loneliness_score">Loneliness Score</option>
+          <option value="happiness_score">Happiness Score</option>
         </select>
+
+        <!-- Sort direction buttons -->
+        <button id="btnSortAsc" onclick="applySort('asc')" title="Sort Ascending">↑ Asc</button>
+        <button id="btnSortDesc" onclick="applySort('desc')" title="Sort Descending">↓ Desc</button>
 
         <button class="primary" onclick="applyFilterSort()">Apply</button>
         <button onclick="resetTable()">Reset</button>
@@ -881,20 +888,18 @@
               <th>#</th>
               <th>Age</th>
               <th>Gender</th>
-              <th>Gaming Hrs/Day</th>
-              <th>Weekly Sessions</th>
-              <th>Years Gaming</th>
-              <th>Sleep Hrs</th>
-              <th>Caffeine</th>
-              <th>Exercise Hrs</th>
+              <th>Gaming<br>Hrs/Day</th>
+              <th>Weekly<br>Sessions</th>
+              <th>Years<br>Gaming</th>
+              <th>Sleep<br>Hrs</th>
+              <th>Exercise<br>Hrs</th>
               <th>Stress</th>
               <th>Depression</th>
               <th>Anxiety</th>
-              <th>Social Score</th>
+              <th>Social<br>Score</th>
               <th>Loneliness</th>
               <th>Happiness</th>
               <th>Addiction</th>
-              <th>Comp. Rank</th>
             </tr>
           </thead>
           <tbody id="tableBody">
@@ -1159,9 +1164,9 @@ const KEY_FIELDS = [
  */
 const DISPLAY_FIELDS = [
   'age', 'gender', 'daily_gaming_hours', 'weekly_sessions', 'years_gaming',
-  'sleep_hours', 'caffeine_intake', 'exercise_hours', 'stress_level',
+  'sleep_hours', 'exercise_hours', 'stress_level',
   'depression_score', 'anxiety_score', 'social_interaction_score',
-  'loneliness_score', 'happiness_score', 'addiction_level', 'competitive_rank'
+  'loneliness_score', 'happiness_score', 'addiction_level'
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -1325,13 +1330,21 @@ function renderTable(data, page, pageSize) {
     tdIdx.style.cssText = 'color:var(--text-dim);font-size:0.65rem;';
     tr.appendChild(tdIdx);
 
+    // Fields that should display as integers (no decimals)
+    const INTEGER_FIELDS = ['age', 'weekly_sessions', 'years_gaming', 'stress_level'];
+
     DISPLAY_FIELDS.forEach(field => {
       const td = document.createElement('td');
       const val = row[field];
       if (field === 'gender') {
         td.textContent = val || '—';
       } else if (val != null && !Number.isNaN(Number(val))) {
-        td.textContent = Number(val).toFixed(2);
+        // Check if this field should be displayed as an integer
+        if (INTEGER_FIELDS.includes(field)) {
+          td.textContent = Math.round(Number(val));
+        } else {
+          td.textContent = Number(val).toFixed(2);
+        }
         td.classList.add('num');
       } else {
         td.textContent = '—';
@@ -1359,25 +1372,52 @@ function prevPage() {
 function applyFilterSort() {
   let filtered = [...window.DS];
 
+  // Gender filter
   const gf = document.getElementById('filterGender');
-  if (gf && gf.value) filtered = filtered.filter(r => r.gender && r.gender.toLowerCase() === gf.value.toLowerCase());
+  if (gf && gf.value) {
+    filtered = filtered.filter(r => r.gender && r.gender.toLowerCase() === gf.value.toLowerCase());
+  }
 
+  // Age range filter
   const amin = document.getElementById('filterAgeMin');
   const amax = document.getElementById('filterAgeMax');
-  if (amin && amin.value !== '') { const v = Number(amin.value); if (!Number.isNaN(v)) filtered = filtered.filter(r => Number(r.age) >= v); }
-  if (amax && amax.value !== '') { const v = Number(amax.value); if (!Number.isNaN(v)) filtered = filtered.filter(r => Number(r.age) <= v); }
-
-  const ss = document.getElementById('sortSelect');
-  if (ss && ss.value) {
-    const parts = ss.value.split('_');
-    const dir = parts.pop();
-    const field = parts.join('_');
-    filtered.sort((a, b) => {
-      const va = Number(a[field]) || 0;
-      const vb = Number(b[field]) || 0;
-      return dir === 'desc' ? vb - va : va - vb;
-    });
+  if (amin && amin.value !== '') {
+    const v = Number(amin.value);
+    if (!Number.isNaN(v)) filtered = filtered.filter(r => Number(r.age) >= v);
   }
+  if (amax && amax.value !== '') {
+    const v = Number(amax.value);
+    if (!Number.isNaN(v)) filtered = filtered.filter(r => Number(r.age) <= v);
+  }
+
+  window.PAGE_STATE.filteredData = filtered;
+  window.PAGE_STATE.totalFiltered = filtered.length;
+  renderTable(filtered, 1);
+}
+
+/**
+ * applySort(direction)
+ * Sorts the currently filtered data by the selected field and direction.
+ * Called by the ↑ Asc and ↓ Desc buttons.
+ * 
+ * @param {string} direction - 'asc' or 'desc'
+ */
+function applySort(direction) {
+  const ss = document.getElementById('sortSelect');
+  if (!ss || !ss.value) {
+    // No sort field selected — just re-render current filtered data
+    renderTable(window.PAGE_STATE.filteredData, 1);
+    return;
+  }
+
+  const field = ss.value;
+  const filtered = [...window.PAGE_STATE.filteredData];
+
+  filtered.sort((a, b) => {
+    const va = Number(a[field]) || 0;
+    const vb = Number(b[field]) || 0;
+    return direction === 'desc' ? vb - va : va - vb;
+  });
 
   window.PAGE_STATE.filteredData = filtered;
   window.PAGE_STATE.totalFiltered = filtered.length;
