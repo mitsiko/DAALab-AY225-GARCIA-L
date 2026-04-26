@@ -1507,7 +1507,113 @@ function drawBarChart(canvasId, data) {
 }
 
 function drawScatterPlot(canvasId, data) {
-  console.warn("⚠ Account 2: drawScatterPlot() not implemented yet.");
+  if (!data || data.length === 0) {
+    console.warn('⚠ drawScatterPlot: No data');
+    return;
+  }
+  
+  // Extract gaming hours and depression scores
+  const points = data.map(d => ({
+    x: d.daily_gaming_hours,
+    y: d.depression_score
+  }));
+  
+  // Compute regression line
+  const xVals = data.map(d => d.daily_gaming_hours);
+  const yVals = data.map(d => d.depression_score);
+  const reg = linearRegression(xVals, yVals);
+  
+  // Generate two endpoints for the regression line
+  const xMin = Math.min(...xVals);
+  const xMax = Math.max(...xVals);
+  const linePoints = [
+    { x: xMin, y: reg.slope * xMin + reg.intercept },
+    { x: xMax, y: reg.slope * xMax + reg.intercept }
+  ];
+  
+  // Destroy old chart if exists
+  if (window.CHARTS[canvasId]) {
+    window.CHARTS[canvasId].destroy();
+  }
+  
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  
+  window.CHARTS[canvasId] = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        // Dataset 1: Student points
+        {
+          label: 'Respondents',
+          data: points,
+          backgroundColor: 'rgba(78, 205, 196, 0.6)',  // Sage green
+          borderColor: 'rgba(78, 205, 196, 1)',
+          borderWidth: 1,
+          pointRadius: 4,
+          pointHoverRadius: 8,
+          order: 2  // Draw below the regression line
+        },
+        // Dataset 2: Regression line
+        {
+          label: `Regression (R² = ${reg.rSquared.toFixed(3)})`,
+          data: linePoints,
+          type: 'line',
+          borderColor: '#ffd93d',  // Gold
+          borderWidth: 2,
+          borderDash: [6, 3],
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+          order: 1  // Draw on top
+        }
+      ]
+    },
+    options: {
+      ...chartTheme(),
+      scales: {
+        x: {
+          ...chartTheme().scales.x,
+          title: {
+            display: true,
+            text: 'Daily Gaming Hours',
+            color: '#8888aa',
+            font: { family: "'IBM Plex Mono'", size: 11 }
+          }
+        },
+        y: {
+          ...chartTheme().scales.y,
+          title: {
+            display: true,
+            text: 'Depression Score (0–10)',
+            color: '#8888aa',
+            font: { family: "'IBM Plex Mono'", size: 11 }
+          },
+          min: 0,
+          max: 10
+        }
+      },
+      plugins: {
+        ...chartTheme().plugins,
+        tooltip: {
+          ...chartTheme().plugins.tooltip,
+          callbacks: {
+            label: function(ctx) {
+              if (ctx.datasetIndex === 0) {
+                return `Gaming: ${ctx.parsed.x.toFixed(1)}h · Depression: ${ctx.parsed.y.toFixed(2)}`;
+              }
+              return ctx.dataset.label;
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // Show canvas, hide placeholder
+  document.getElementById('scatterPlaceholder').style.display = 'none';
+  document.getElementById(canvasId).style.display = 'block';
+  
+  console.log('🔵 Scatter plot rendered: Gaming vs Depression with regression line');
 }
 
 function drawDoughnut(canvasId, data) {
