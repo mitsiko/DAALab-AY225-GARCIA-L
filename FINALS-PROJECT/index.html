@@ -1372,6 +1372,44 @@ function prevPage() {
   renderTable(window.PAGE_STATE.filteredData, Math.max(window.PAGE_STATE.currentPage - 1, 1));
 }
 
+function applyFilterSort() {
+  let filtered = [...window.DS];
+
+  const gf = document.getElementById('filterGender');
+  if (gf && gf.value) filtered = filtered.filter(r => r.gender && r.gender.toLowerCase() === gf.value.toLowerCase());
+
+  const amin = document.getElementById('filterAgeMin');
+  const amax = document.getElementById('filterAgeMax');
+  if (amin && amin.value !== '') { const v = Number(amin.value); if (!Number.isNaN(v)) filtered = filtered.filter(r => Number(r.age) >= v); }
+  if (amax && amax.value !== '') { const v = Number(amax.value); if (!Number.isNaN(v)) filtered = filtered.filter(r => Number(r.age) <= v); }
+
+  const ss = document.getElementById('sortSelect');
+  if (ss && ss.value) {
+    const parts = ss.value.split('_');
+    const dir = parts.pop();
+    const field = parts.join('_');
+    filtered.sort((a, b) => {
+      const va = Number(a[field]) || 0;
+      const vb = Number(b[field]) || 0;
+      return dir === 'desc' ? vb - va : va - vb;
+    });
+  }
+
+  window.PAGE_STATE.filteredData = filtered;
+  window.PAGE_STATE.totalFiltered = filtered.length;
+  renderTable(filtered, 1);
+}
+
+function resetTable() {
+  document.getElementById('filterGender').value = '';
+  document.getElementById('filterAgeMin').value = '';
+  document.getElementById('filterAgeMax').value = '';
+  document.getElementById('sortSelect').value = '';
+  window.PAGE_STATE.filteredData = [...window.DS];
+  window.PAGE_STATE.totalFiltered = window.DS.length;
+  renderTable(window.DS, 1);
+}
+
 // ── START ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   console.log('DOM ready');
