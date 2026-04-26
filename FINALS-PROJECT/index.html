@@ -1794,7 +1794,66 @@ function linearRegression(x, y) {
 }
 
 function renderAnalysis(data) {
-  console.warn("⚠ Account 2: renderAnalysis() not implemented yet.");
+  if (!data || data.length === 0) {
+    console.warn('⚠ renderAnalysis: No data');
+    return;
+  }
+  
+  // Extract arrays
+  const gamingHours = data.map(d => d.daily_gaming_hours);
+  const depression   = data.map(d => d.depression_score);
+  const sleepHours   = data.map(d => d.sleep_hours);
+  
+  // ── DESCRIPTIVE STATS TILE ──────────────────────
+  const n = data.length;
+  const gMin = Math.min(...gamingHours);
+  const gMax = Math.max(...gamingHours);
+  const gMeanVal = mean(gamingHours);
+  const gMedianVal = median(gamingHours);
+  const gVar = variance(gamingHours);
+  const gStd = stdDev(gamingHours);
+  
+  document.getElementById('an').textContent       = n.toLocaleString();
+  document.getElementById('aMean').textContent    = gMeanVal.toFixed(2) + ' hrs';
+  document.getElementById('aMedian').textContent  = gMedianVal.toFixed(2) + ' hrs';
+  document.getElementById('aVariance').textContent = gVar.toFixed(2);
+  document.getElementById('aStdDev').textContent  = gStd.toFixed(2);
+  document.getElementById('aRange').textContent   = gMin.toFixed(1) + ' – ' + gMax.toFixed(1);
+  
+  // ── CORRELATION TILE ────────────────────────────
+  const rGamingDep = pearsonCorr(gamingHours, depression);
+  const rGamingSleep = pearsonCorr(gamingHours, sleepHours);
+  
+  // Interpretation helper
+  function interpretR(r) {
+    const abs = Math.abs(r);
+    let strength = abs >= 0.7 ? 'Strong' : abs >= 0.3 ? 'Moderate' : 'Weak';
+    let direction = r > 0 ? 'Positive' : r < 0 ? 'Negative' : 'None';
+    return strength + ' ' + direction;
+  }
+  
+  document.getElementById('rPearson').textContent  = rGamingDep.toFixed(4);
+  document.getElementById('rInterp').textContent   = interpretR(rGamingDep);
+  document.getElementById('rPearson2').textContent = rGamingSleep.toFixed(4);
+  document.getElementById('rInterp2').textContent  = interpretR(rGamingSleep);
+  
+  // ── REGRESSION TILE ─────────────────────────────
+  const reg = linearRegression(gamingHours, depression);
+  
+  document.getElementById('regEquation').textContent  = `y = ${reg.slope.toFixed(4)}x + ${reg.intercept.toFixed(2)}`;
+  document.getElementById('regSlope').textContent     = reg.slope.toFixed(4);
+  document.getElementById('regIntercept').textContent = reg.intercept.toFixed(2);
+  document.getElementById('regR2').textContent        = reg.rSquared.toFixed(4);
+  
+  // R² interpretation
+  let r2Interp = '';
+  if (reg.rSquared >= 0.7) r2Interp = 'Strong fit — model explains most variance';
+  else if (reg.rSquared >= 0.3) r2Interp = 'Moderate fit — model captures some relationship';
+  else r2Interp = 'Weak fit — much variance is unexplained';
+  document.getElementById('regInterp').textContent = r2Interp;
+  
+  console.log('📈 Analysis rendered:', 
+    `n=${n}, r(gaming→dep)=${rGamingDep}, r(gaming→sleep)=${rGamingSleep}, R²=${reg.rSquared}`);
 }
 
 function renderInsights(data) {
