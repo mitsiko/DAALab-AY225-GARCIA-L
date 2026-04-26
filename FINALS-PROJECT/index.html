@@ -961,7 +961,7 @@
         <span class="ico"></span>
         Account 2: implement <code>drawScatterPlot()</code>
       </div>
-      <canvas id="scatterChart" style="display:none; max-height:250px;"></canvas>
+      <canvas id="scatterChart" style="display:none; max-height:500px;"></canvas>
     </div>
 
   </section>
@@ -1018,7 +1018,7 @@
           <li><span class="k">Slope (m)</span>        <span class="v" id="regSlope">—</span></li>
           <li><span class="k">Intercept (b)</span>   <span class="v" id="regIntercept">—</span></li>
           <li><span class="k">R² (fit quality)</span><span class="v" id="regR2">—</span></li>
-          <li><span class="k">Interpretation</span>  <span class="v" id="regInterp">—</span></li>
+          <li><span class="k">Interpretation:</span>  <span class="v" id="regInterp" style="padding-left:10px">—</span></li>
         </ul>
       </div>
 
@@ -1105,11 +1105,14 @@ window.PAGE_STATE = {
  * DO NOT change this function signature.
  */
 function onDataReady() {
-  // Account 2: call your initializers here
-  // initCharts();
-  // renderAnalysis(window.DS);
-  // renderInsights(window.DS);
   console.log("onDataReady() — window.DS:", window.DS.length, "records ready");
+  
+  // Account 2: Initialize all visualizations and analyses
+  initCharts();
+  renderAnalysis(window.DS);
+  renderInsights(window.DS);
+  
+  console.log("All Account 2 modules initialized");
 }
 
 /**
@@ -1432,19 +1435,277 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ── PART A: CHART FUNCTIONS ────────────────────────────────────── */
 
 function initCharts() {
-  console.warn("⚠ Account 2: initCharts() not implemented yet.");
+  console.log('Initializing charts...');
+  
+  drawBarChart('barChart', window.DS);
+  drawScatterPlot('scatterChart', window.DS);
+  drawDoughnut('doughnutChart', window.DS);
+  
+  console.log('All charts initialized');
 }
 
 function drawBarChart(canvasId, data) {
-  console.warn("⚠ Account 2: drawBarChart() not implemented yet.");
+  if (!data || data.length === 0) {
+    console.warn('⚠ drawBarChart: No data');
+    return;
+  }
+  
+  // Sort by gaming hours descending, take top 10
+  const sorted = [...data].sort((a, b) => b.daily_gaming_hours - a.daily_gaming_hours);
+  const top10 = sorted.slice(0, 10);
+  
+  const labels = top10.map(d => `ID ${d.competitive_rank || '?'} (${d.gender || '?'})`);
+  const values = top10.map(d => d.daily_gaming_hours);
+  
+  // Destroy old chart if exists
+  if (window.CHARTS[canvasId]) {
+    window.CHARTS[canvasId].destroy();
+  }
+  
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  
+  window.CHARTS[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Daily Gaming Hours',
+        data: values,
+        backgroundColor: 'rgba(255, 107, 107, 0.75)',
+        borderColor: 'rgba(255, 107, 107, 1)',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      ...chartTheme(),
+      indexAxis: 'y',  // Horizontal bars
+      scales: {
+        x: {
+          ...chartTheme().scales.x,
+          title: {
+            display: true,
+            text: 'Hours per Day',
+            color: '#8888aa',
+            font: { family: "'IBM Plex Mono'", size: 10 }
+          },
+          max: Math.ceil(Math.max(...values)) + 2
+        },
+        y: {
+          ...chartTheme().scales.y,
+          ticks: {
+            color: '#8888aa',
+            font: { family: "'IBM Plex Mono'", size: 9 }
+          }
+        }
+      },
+      plugins: {
+        ...chartTheme().plugins,
+        title: {
+          display: false
+        }
+      }
+    }
+  });
+  
+  // Show canvas, hide placeholder
+  document.getElementById('barPlaceholder').style.display = 'none';
+  document.getElementById(canvasId).style.display = 'block';
+  
+  console.log('Bar chart rendered: Top 10 gaming hours');
 }
 
 function drawScatterPlot(canvasId, data) {
-  console.warn("⚠ Account 2: drawScatterPlot() not implemented yet.");
+  if (!data || data.length === 0) {
+    console.warn('⚠ drawScatterPlot: No data');
+    return;
+  }
+  
+  // Extract gaming hours and depression scores
+  const points = data.map(d => ({
+    x: d.daily_gaming_hours,
+    y: d.depression_score
+  }));
+  
+  // Compute regression line
+  const xVals = data.map(d => d.daily_gaming_hours);
+  const yVals = data.map(d => d.depression_score);
+  const reg = linearRegression(xVals, yVals);
+  
+  // Generate two endpoints for the regression line
+  const xMin = Math.min(...xVals);
+  const xMax = Math.max(...xVals);
+  const linePoints = [
+    { x: xMin, y: reg.slope * xMin + reg.intercept },
+    { x: xMax, y: reg.slope * xMax + reg.intercept }
+  ];
+  
+  // Destroy old chart if exists
+  if (window.CHARTS[canvasId]) {
+    window.CHARTS[canvasId].destroy();
+  }
+  
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  
+  window.CHARTS[canvasId] = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        // Dataset 1: Student points
+        {
+          label: 'Respondents',
+          data: points,
+          backgroundColor: 'rgba(78, 205, 196, 0.6)',  // Sage green
+          borderColor: 'rgba(78, 205, 196, 1)',
+          borderWidth: 0.5,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          order: 2  // Draw below the regression line
+        },
+        // Dataset 2: Regression line
+        {
+          label: `Regression (R² = ${reg.rSquared.toFixed(3)})`,
+          data: linePoints,
+          type: 'line',
+          borderColor: '#ffd93d',  // Gold
+          borderWidth: 2,
+          borderDash: [6, 3],
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+          order: 1  // Draw on top
+        }
+      ]
+    },
+    options: {
+      ...chartTheme(),
+      scales: {
+        x: {
+          ...chartTheme().scales.x,
+          title: {
+            display: true,
+            text: 'Daily Gaming Hours',
+            color: '#8888aa',
+            font: { family: "'IBM Plex Mono'", size: 11 }
+          }
+        },
+        y: {
+          ...chartTheme().scales.y,
+          title: {
+            display: true,
+            text: 'Depression Score (0–10)',
+            color: '#8888aa',
+            font: { family: "'IBM Plex Mono'", size: 11 }
+          },
+          min: 0,
+          max: 10
+        }
+      },
+      plugins: {
+        ...chartTheme().plugins,
+        tooltip: {
+          ...chartTheme().plugins.tooltip,
+          callbacks: {
+            label: function(ctx) {
+              if (ctx.datasetIndex === 0) {
+                return `Gaming: ${ctx.parsed.x.toFixed(1)}h · Depression: ${ctx.parsed.y.toFixed(2)}`;
+              }
+              return ctx.dataset.label;
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // Show canvas, hide placeholder
+  document.getElementById('scatterPlaceholder').style.display = 'none';
+  document.getElementById(canvasId).style.display = 'block';
+  
+  console.log('Scatter plot rendered: Gaming vs Depression with regression line');
 }
 
 function drawDoughnut(canvasId, data) {
-  console.warn("⚠ Account 2: drawDoughnut() not implemented yet.");
+  if (!data || data.length === 0) {
+    console.warn('⚠ drawDoughnut: No data');
+    return;
+  }
+  
+  // Count stress groups
+  let lowCount = 0;
+  let medCount = 0;
+  let highCount = 0;
+  
+  data.forEach(d => {
+    const stress = d.stress_level;
+    if (stress >= 0 && stress <= 3) {
+      lowCount++;
+    } else if (stress >= 4 && stress <= 6) {
+      medCount++;
+    } else if (stress >= 7) {
+      highCount++;
+    }
+  });
+  
+  const total = data.length;
+  const counts = [lowCount, medCount, highCount];
+  const labels = [`Low Stress (0-3)`, `Medium Stress (4-6)`, `High Stress (7-10)`];
+  const colors = ['#4ecdc4', '#ffd93d', '#ff6b6b'];  // Sage, Gold, Coral
+  
+  // Destroy old chart if exists
+  if (window.CHARTS[canvasId]) {
+    window.CHARTS[canvasId].destroy();
+  }
+  
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  
+  window.CHARTS[canvasId] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: counts,
+        backgroundColor: colors.map(c => c + 'CC'),  // 80% opacity
+        borderColor: colors,
+        borderWidth: 2,
+        hoverBorderWidth: 3
+      }]
+    },
+    options: {
+      ...chartTheme(),
+      cutout: '40%',
+
+      scales: {
+        x: {
+          display: false,
+          grid: { display: false }
+        },
+        y: {
+          display: false,
+          grid: { display: false }
+        }
+      },
+
+      plugins: {
+        ...chartTheme().plugins,
+        tooltip: {
+          ...chartTheme().plugins.tooltip,
+          callbacks: {
+            label: function(ctx) {
+              const pct = ((ctx.parsed / total) * 100).toFixed(1);
+              return ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // Show canvas, hide placeholder
+  document.getElementById('doughnutPlaceholder').style.display = 'none';
+  document.getElementById(canvasId).style.display = 'block';
+  
+  console.log('Doughnut chart rendered: Stress distribution (Low/Med/High)');
 }
 
 function chartTheme() {
@@ -1453,7 +1714,11 @@ function chartTheme() {
     maintainAspectRatio: true,
     plugins: {
       legend: {
-        labels: { color: '#8888aa', font: { family: "'IBM Plex Mono'", size: 11 } }
+        labels: { 
+          color: '#8888aa', 
+          font: { family: "'IBM Plex Mono'", size: 11 },
+          padding: 16
+        }
       },
       tooltip: {
         backgroundColor: '#141428',
@@ -1461,8 +1726,10 @@ function chartTheme() {
         borderWidth: 1,
         titleColor: '#a78bfa',
         bodyColor: '#e2e2f0',
-        titleFont: { family: "'IBM Plex Mono'" },
-        bodyFont:  { family: "'IBM Plex Mono'" }
+        titleFont: { family: "'IBM Plex Mono'", size: 12 },
+        bodyFont:  { family: "'IBM Plex Mono'", size: 11 },
+        padding: 12,
+        cornerRadius: 4
       }
     },
     scales: {
@@ -1482,28 +1749,222 @@ function chartTheme() {
 /* ── PART B: STATISTICAL ANALYSIS FUNCTIONS ─────────────────────── */
 
 function variance(arr) {
-  throw new Error("Account 2: variance() not implemented yet");
+  if (!arr || arr.length === 0) return 0;
+  const mu = mean(arr);
+  const sumSquaredDiffs = arr.reduce((sum, x) => sum + Math.pow(x - mu, 2), 0);
+  return Math.round((sumSquaredDiffs / arr.length) * 100) / 100;
 }
 
 function stdDev(arr) {
-  throw new Error("Account 2: stdDev() not implemented yet");
+  return Math.round(Math.sqrt(variance(arr)) * 100) / 100;
 }
 
 function pearsonCorr(x, y) {
-  throw new Error("Account 2: pearsonCorr() not implemented yet");
+  if (!x || !y || x.length === 0 || y.length === 0 || x.length !== y.length) {
+    console.warn('⚠ pearsonCorr: Invalid or mismatched arrays');
+    return 0;
+  }
+  
+  const mx = mean(x);
+  const my = mean(y);
+  
+  let numerator = 0;
+  let denomX = 0;
+  let denomY = 0;
+  
+  for (let i = 0; i < x.length; i++) {
+    const dx = x[i] - mx;
+    const dy = y[i] - my;
+    numerator += dx * dy;
+    denomX += dx * dx;
+    denomY += dy * dy;
+  }
+  
+  const denominator = Math.sqrt(denomX * denomY);
+  if (denominator === 0) return 0;
+  
+  return Math.round((numerator / denominator) * 10000) / 10000;
 }
 
 function linearRegression(x, y) {
-  throw new Error("Account 2: linearRegression() not implemented yet");
+  if (!x || !y || x.length === 0 || x.length !== y.length) {
+    console.warn('⚠ linearRegression: Invalid input');
+    return { slope: 0, intercept: 0, rSquared: 0 };
+  }
+  
+  const mx = mean(x);
+  const my = mean(y);
+  
+  let numerator = 0;
+  let denominator = 0;
+  
+  for (let i = 0; i < x.length; i++) {
+    const dx = x[i] - mx;
+    numerator += dx * (y[i] - my);
+    denominator += dx * dx;
+  }
+  
+  const slope = denominator !== 0 
+    ? Math.round((numerator / denominator) * 10000) / 10000 
+    : 0;
+  const intercept = Math.round((my - slope * mx) * 10000) / 10000;
+  const r = pearsonCorr(x, y);
+  const rSquared = Math.round(r * r * 10000) / 10000;
+  
+  return { slope, intercept, rSquared };
 }
 
 function renderAnalysis(data) {
-  console.warn("⚠ Account 2: renderAnalysis() not implemented yet.");
+  if (!data || data.length === 0) {
+    console.warn('⚠ renderAnalysis: No data');
+    return;
+  }
+  
+  // Extract arrays
+  const gamingHours = data.map(d => d.daily_gaming_hours);
+  const depression   = data.map(d => d.depression_score);
+  const sleepHours   = data.map(d => d.sleep_hours);
+  
+  // ── DESCRIPTIVE STATS TILE ──────────────────────
+  const n = data.length;
+  const gMin = Math.min(...gamingHours);
+  const gMax = Math.max(...gamingHours);
+  const gMeanVal = mean(gamingHours);
+  const gMedianVal = median(gamingHours);
+  const gVar = variance(gamingHours);
+  const gStd = stdDev(gamingHours);
+  
+  document.getElementById('an').textContent       = n.toLocaleString();
+  document.getElementById('aMean').textContent    = gMeanVal.toFixed(2) + ' hrs';
+  document.getElementById('aMedian').textContent  = gMedianVal.toFixed(2) + ' hrs';
+  document.getElementById('aVariance').textContent = gVar.toFixed(2);
+  document.getElementById('aStdDev').textContent  = gStd.toFixed(2);
+  document.getElementById('aRange').textContent   = gMin.toFixed(1) + ' – ' + gMax.toFixed(1);
+  
+  // ── CORRELATION TILE ────────────────────────────
+  const rGamingDep = pearsonCorr(gamingHours, depression);
+  const rGamingSleep = pearsonCorr(gamingHours, sleepHours);
+  
+  // Interpretation helper
+  function interpretR(r) {
+    const abs = Math.abs(r);
+    let strength = abs >= 0.7 ? 'Strong' : abs >= 0.3 ? 'Moderate' : 'Weak';
+    let direction = r > 0 ? 'Positive' : r < 0 ? 'Negative' : 'None';
+    return strength + ' ' + direction;
+  }
+  
+  document.getElementById('rPearson').textContent  = rGamingDep.toFixed(4);
+  document.getElementById('rInterp').textContent   = interpretR(rGamingDep);
+  document.getElementById('rPearson2').textContent = rGamingSleep.toFixed(4);
+  document.getElementById('rInterp2').textContent  = interpretR(rGamingSleep);
+  
+  // ── REGRESSION TILE ─────────────────────────────
+  const reg = linearRegression(gamingHours, depression);
+  
+  document.getElementById('regEquation').textContent  = `y = ${reg.slope.toFixed(4)}x + ${reg.intercept.toFixed(2)}`;
+  document.getElementById('regSlope').textContent     = reg.slope.toFixed(4);
+  document.getElementById('regIntercept').textContent = reg.intercept.toFixed(2);
+  document.getElementById('regR2').textContent        = reg.rSquared.toFixed(4);
+  
+  // R² interpretation
+  let r2Interp = '';
+  if (reg.rSquared >= 0.7) r2Interp = 'Strong fit — model explains most variance';
+  else if (reg.rSquared >= 0.3) r2Interp = 'Moderate fit — model captures some relationship';
+  else r2Interp = 'Weak fit — much variance is unexplained';
+  document.getElementById('regInterp').textContent = r2Interp;
+  
+  console.log('Analysis rendered:', 
+    `n=${n}, r(gaming→dep)=${rGamingDep}, r(gaming→sleep)=${rGamingSleep}, R²=${reg.rSquared}`);
 }
 
 function renderInsights(data) {
-  console.warn("⚠ Account 2: renderInsights() not implemented yet.");
+  if (!data || data.length === 0) {
+    console.warn('⚠ renderInsights: No data');
+    return;
+  }
+  
+  // Compute all needed values
+  const gamingHours  = data.map(d => d.daily_gaming_hours);
+  const depression   = data.map(d => d.depression_score);
+  const stress       = data.map(d => d.stress_level);
+  const sleepHours   = data.map(d => d.sleep_hours);
+  const addiction    = data.map(d => d.addiction_level);
+  
+  const meanGaming    = mean(gamingHours);
+  const meanDepression = mean(depression);
+  const meanSleep     = mean(sleepHours);
+  const meanStress    = mean(stress);
+  
+  const highStressCount    = stress.filter(v => v >= 7).length;
+  const highStressRate     = Math.round((highStressCount / stress.length) * 100);
+  const highAddictionCount = addiction.filter(v => v >= 7).length;
+  const highAddictionRate  = Math.round((highAddictionCount / addiction.length) * 100);
+  
+  const rGamingDep     = pearsonCorr(gamingHours, depression);
+  const rGamingSleep   = pearsonCorr(gamingHours, sleepHours);
+  const reg            = linearRegression(gamingHours, depression);
+  
+  // Interpret correlations
+  function interpretStrength(r) {
+    const abs = Math.abs(r);
+    if (abs >= 0.7) return 'strong';
+    if (abs >= 0.3) return 'moderate';
+    return 'weak';
+  }
+  
+  function interpretDirection(r) {
+    return r > 0 ? 'positive' : 'negative';
+  }
+  
+  // Pre-compute values for the narrative
+  const gamingDepStrength = interpretStrength(rGamingDep);
+  const gamingDepDir = interpretDirection(rGamingDep);
+  const gamingSleepStrength = interpretStrength(rGamingSleep);
+  const gamingSleepDir = interpretDirection(rGamingSleep);
+  
+  // Predicted depression score at 5 gaming hours
+  const predAt5 = reg.slope * 5 + reg.intercept;
+  const predAt10 = reg.slope * 10 + reg.intercept;
+  
+  // Build the narrative
+  const narrative = `
+    <p class="insight-text">
+      The cohort of <span class="highlight">${data.length.toLocaleString()} respondents</span> 
+      reported a mean daily gaming time of 
+      <span class="highlight">${meanGaming.toFixed(1)} hours</span> and a mean depression score of 
+      <span class="highlight">${meanDepression.toFixed(2)} out of 10</span>. 
+      Gaming hours showed a 
+      <span class="highlight">${gamingDepStrength} ${gamingDepDir} correlation</span> with depression 
+      (r = <span class="highlight">${rGamingDep.toFixed(3)}</span>), suggesting ${gamingDepDir === 'positive' ? 'higher gaming time is associated with higher depression scores' : 'higher gaming time is associated with lower depression scores'}.
+    </p>
+    <p class="insight-text" style="margin-top:12px;">
+      The linear regression model (R² = <span class="highlight">${reg.rSquared.toFixed(3)}</span>) 
+      predicts that a respondent who games 
+      <span class="highlight">5 hours/day</span> would have an estimated depression score of 
+      <span class="highlight">${predAt5.toFixed(2)}</span>, while at 
+      <span class="highlight">10 hours/day</span> the predicted score rises to 
+      <span class="highlight">${predAt10.toFixed(2)}</span>.
+    </p>
+    <p class="insight-text" style="margin-top:12px;">
+      Sleep hours showed a 
+      <span class="highlight">${gamingSleepStrength} ${gamingSleepDir} correlation</span> with gaming 
+      (r = <span class="highlight">${rGamingSleep.toFixed(3)}</span>). 
+      Additionally, <span class="highlight">${highStressRate}%</span> of respondents reported high stress 
+      (≥7) and <span class="highlight">${highAddictionRate}%</span> showed signs of high gaming addiction (≥7). 
+      These findings suggest complex relationships between gaming behavior and mental health indicators that warrant further study.
+    </p>
+    <div class="disclaimer" style="margin-top:16px;">
+      ⚠ <strong>Important:</strong> Correlation does not imply causation. These relationships 
+      may be bidirectional or influenced by unmeasured confounding variables. 
+      This analysis identifies patterns, not causal effects.
+    </div>
+  `;
+  
+  document.getElementById('insightsBody').innerHTML = narrative;
+  
+  console.log('Insights panel populated with computed statistics');
 }
+
 
 /* ─────────────────────────────────────────────────────────────────
    END OF ACCOUNT CONTRIBUTION ZONES
