@@ -1311,14 +1311,73 @@ function loadDataset() {
   });
 }
 
+function renderTable(data, page, pageSize) {
+  page = page || 1;
+  pageSize = pageSize || 50;
+  const tbody = document.getElementById('tableBody');
+  if (!tbody) return;
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="17" style="text-align:center;padding:50px;color:var(--text-dim);">No results found.</td></tr>';
+    document.getElementById('rowCount').textContent = '0 rows';
+    document.getElementById('paginationControls').style.display = 'none';
+    return;
+  }
+
+  const totalPages = Math.ceil(data.length / pageSize);
+  const safePage = Math.max(1, Math.min(page, totalPages));
+  const start = (safePage - 1) * pageSize;
+  const end = Math.min(start + pageSize, data.length);
+  const pageData = data.slice(start, end);
+
+  window.PAGE_STATE.currentPage = safePage;
+  window.PAGE_STATE.totalFiltered = data.length;
+
+  tbody.innerHTML = '';
+  pageData.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    const tdIdx = document.createElement('td');
+    tdIdx.textContent = start + i + 1;
+    tdIdx.style.cssText = 'color:var(--text-dim);font-size:0.65rem;';
+    tr.appendChild(tdIdx);
+
+    DISPLAY_FIELDS.forEach(field => {
+      const td = document.createElement('td');
+      const val = row[field];
+      if (field === 'gender') {
+        td.textContent = val || '—';
+      } else if (val != null && !Number.isNaN(Number(val))) {
+        td.textContent = Number(val).toFixed(2);
+        td.classList.add('num');
+      } else {
+        td.textContent = '—';
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('rowCount').textContent = `Showing ${start+1}–${end} of ${data.length.toLocaleString()} rows`;
+  document.getElementById('pageInfo').textContent = `Page ${safePage} of ${totalPages}`;
+  document.getElementById('paginationControls').style.display = 'flex';
+  document.getElementById('btnPrev').disabled = (safePage <= 1);
+  document.getElementById('btnNext').disabled = (safePage >= totalPages);
+}
+
+function nextPage() {
+  const tp = Math.ceil(window.PAGE_STATE.totalFiltered / window.PAGE_STATE.pageSize);
+  renderTable(window.PAGE_STATE.filteredData, Math.min(window.PAGE_STATE.currentPage + 1, tp));
+}
+function prevPage() {
+  renderTable(window.PAGE_STATE.filteredData, Math.max(window.PAGE_STATE.currentPage - 1, 1));
+}
+
 // ── START ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   console.log('DOM ready');
   loadDataset();
 });
-// ─────────────────────────────────────────────────────────────────
-// COMMIT 3 FUNCTIONS GO HERE (renderTable, nextPage, prevPage)
-// ─────────────────────────────────────────────────────────────────
+
 
 // ─────────────────────────────────────────────────────────────────
 // COMMIT 4 FUNCTIONS GO HERE (applyFilterSort, resetTable)
