@@ -1184,6 +1184,138 @@ const DISPLAY_FIELDS = [
 // COMMIT 2 FUNCTIONS GO HERE (loadDataset, sampleData, cleanData)
 // ─────────────────────────────────────────────────────────────────
 
+// ── UTILITY ────────────────────────────────────────
+function updateProgress(pct) {
+  const bar = document.getElementById('progressBar');
+  const status = document.getElementById('loadStatus');
+  if (bar) bar.style.width = pct + '%';
+  if (status) {
+    if (pct < 30) status.textContent = 'Downloading CSV...';
+    else if (pct < 80) status.textContent = 'Parsing data...';
+    else if (pct < 95) status.textContent = 'Cleaning & sampling...';
+    else status.textContent = 'Rendering table...';
+  }
+}
+
+function showError(msg) {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('errorState').style.display = 'block';
+  document.getElementById('errorDetail').textContent = msg;
+}
+
+function showUI() {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('errorState').style.display = 'none';
+  document.getElementById('sampleNotice').style.display = 'block';
+  document.getElementById('summaryCards').style.display = 'grid';
+  document.getElementById('tablePanel').style.display = 'block';
+}
+
+// ── DATA LOADING ──────────────────────────────────
+function sampleData(data, size) {
+  if (!data || data.length === 0) return [];
+  const actualSize = Math.min(size, data.length);
+  const shuffled = [...data];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, actualSize);
+}
+
+function cleanData(data) {
+  if (!data || data.length === 0) return { cleaned: [], removed: 0 };
+  const cleaned = [];
+  let removed = 0;
+  for (const row of data) {
+    let valid = true;
+    for (const field of KEY_FIELDS) {
+      const val = row[field];
+      if (val === null || val === undefined || val === '' || Number.isNaN(Number(val))) {
+        valid = false;
+        break;
+      }
+      row[field] = Math.round(Number(val) * 100) / 100;
+    }
+    if (valid) cleaned.push(row);
+    else removed++;
+  }
+  return { cleaned, removed };
+}
+
+function loadDataset() {
+  console.log('Starting data load...');
+  updateProgress(5);
+
+  const csvPath = 'data/gaming_mental_health_sampled.csv';
+  console.log('Loading:', csvPath);
+
+  Papa.parse(csvPath, {
+    download: true,
+    header: true,
+    dynamicTyping: true,
+    skipEmptyLines: true,
+
+    complete: function(results) {
+      updateProgress(90);
+      console.log('PapaParse done. Rows:', results.data ? results.data.length : 0);
+      console.log('   Errors:', results.errors ? results.errors.length : 0);
+
+      if (results.errors && results.errors.length > 0) {
+        console.warn('⚠ Parse errors (first 5):', results.errors.slice(0, 5));
+      }
+
+      if (!results.data || results.data.length === 0) {
+        showError('CSV loaded but 0 rows. Check the file format and console for details.');
+        return;
+      }
+
+      const validRows = results.data.filter(r => r && Object.keys(r).length > 3 && r.age != null);
+      console.log('   Valid rows after filter:', validRows.length);
+
+      if (validRows.length === 0) {
+        showError('All rows filtered as invalid. Check CSV delimiter is comma.');
+        return;
+      }
+
+      window.DS_META.originalRowCount = validRows.length;
+
+      updateProgress(93);
+      const { cleaned, removed } = cleanData(validRows);
+      window.DS_META.cleanedRowsRemoved = removed;
+      console.log('   After cleaning:', cleaned.length, '(removed', removed, ')');
+
+      updateProgress(96);
+      const sampled = sampleData(cleaned, 10000);
+      window.DS_META.sampleSize = sampled.length;
+
+      window.DS = sampled;
+      window.PAGE_STATE.filteredData = [...sampled];
+      window.PAGE_STATE.totalFiltered = sampled.length;
+      window.DS_META.dataLoaded = true;
+
+      updateProgress(100);
+
+      renderTable(window.DS);
+      renderSummaryCards(window.DS);
+      showUI();
+
+      console.log('SUCCESS:', window.DS.length, 'rows in window.DS');
+      onDataReady();
+    },
+
+    error: function(err) {
+      console.error('Load error:', err);
+      showError('Failed to load: ' + (err.message || 'Unknown error') + '. Path: ' + csvPath);
+    }
+  });
+}
+
+// ── START ─────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM ready');
+  loadDataset();
+});
 // ─────────────────────────────────────────────────────────────────
 // COMMIT 3 FUNCTIONS GO HERE (renderTable, nextPage, prevPage)
 // ─────────────────────────────────────────────────────────────────
