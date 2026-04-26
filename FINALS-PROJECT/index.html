@@ -1453,7 +1453,11 @@ function chartTheme() {
     maintainAspectRatio: true,
     plugins: {
       legend: {
-        labels: { color: '#8888aa', font: { family: "'IBM Plex Mono'", size: 11 } }
+        labels: { 
+          color: '#8888aa', 
+          font: { family: "'IBM Plex Mono'", size: 11 },
+          padding: 16
+        }
       },
       tooltip: {
         backgroundColor: '#141428',
@@ -1461,8 +1465,10 @@ function chartTheme() {
         borderWidth: 1,
         titleColor: '#a78bfa',
         bodyColor: '#e2e2f0',
-        titleFont: { family: "'IBM Plex Mono'" },
-        bodyFont:  { family: "'IBM Plex Mono'" }
+        titleFont: { family: "'IBM Plex Mono'", size: 12 },
+        bodyFont:  { family: "'IBM Plex Mono'", size: 11 },
+        padding: 12,
+        cornerRadius: 4
       }
     },
     scales: {
@@ -1482,19 +1488,69 @@ function chartTheme() {
 /* ── PART B: STATISTICAL ANALYSIS FUNCTIONS ─────────────────────── */
 
 function variance(arr) {
-  throw new Error("Account 2: variance() not implemented yet");
+  if (!arr || arr.length === 0) return 0;
+  const mu = mean(arr);
+  const sumSquaredDiffs = arr.reduce((sum, x) => sum + Math.pow(x - mu, 2), 0);
+  return Math.round((sumSquaredDiffs / arr.length) * 100) / 100;
 }
 
 function stdDev(arr) {
-  throw new Error("Account 2: stdDev() not implemented yet");
+  return Math.round(Math.sqrt(variance(arr)) * 100) / 100;
 }
 
 function pearsonCorr(x, y) {
-  throw new Error("Account 2: pearsonCorr() not implemented yet");
+  if (!x || !y || x.length === 0 || y.length === 0 || x.length !== y.length) {
+    console.warn('⚠ pearsonCorr: Invalid or mismatched arrays');
+    return 0;
+  }
+  
+  const mx = mean(x);
+  const my = mean(y);
+  
+  let numerator = 0;
+  let denomX = 0;
+  let denomY = 0;
+  
+  for (let i = 0; i < x.length; i++) {
+    const dx = x[i] - mx;
+    const dy = y[i] - my;
+    numerator += dx * dy;
+    denomX += dx * dx;
+    denomY += dy * dy;
+  }
+  
+  const denominator = Math.sqrt(denomX * denomY);
+  if (denominator === 0) return 0;
+  
+  return Math.round((numerator / denominator) * 10000) / 10000;
 }
 
 function linearRegression(x, y) {
-  throw new Error("Account 2: linearRegression() not implemented yet");
+  if (!x || !y || x.length === 0 || x.length !== y.length) {
+    console.warn('⚠ linearRegression: Invalid input');
+    return { slope: 0, intercept: 0, rSquared: 0 };
+  }
+  
+  const mx = mean(x);
+  const my = mean(y);
+  
+  let numerator = 0;
+  let denominator = 0;
+  
+  for (let i = 0; i < x.length; i++) {
+    const dx = x[i] - mx;
+    numerator += dx * (y[i] - my);
+    denominator += dx * dx;
+  }
+  
+  const slope = denominator !== 0 
+    ? Math.round((numerator / denominator) * 10000) / 10000 
+    : 0;
+  const intercept = Math.round((my - slope * mx) * 10000) / 10000;
+  const r = pearsonCorr(x, y);
+  const rSquared = Math.round(r * r * 10000) / 10000;
+  
+  return { slope, intercept, rSquared };
 }
 
 function renderAnalysis(data) {
