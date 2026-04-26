@@ -1436,7 +1436,74 @@ function initCharts() {
 }
 
 function drawBarChart(canvasId, data) {
-  console.warn("⚠ Account 2: drawBarChart() not implemented yet.");
+  if (!data || data.length === 0) {
+    console.warn('⚠ drawBarChart: No data');
+    return;
+  }
+  
+  // Sort by gaming hours descending, take top 10
+  const sorted = [...data].sort((a, b) => b.daily_gaming_hours - a.daily_gaming_hours);
+  const top10 = sorted.slice(0, 10);
+  
+  const labels = top10.map(d => `ID ${d.competitive_rank || '?'} (${d.gender || '?'})`);
+  const values = top10.map(d => d.daily_gaming_hours);
+  
+  // Destroy old chart if exists
+  if (window.CHARTS[canvasId]) {
+    window.CHARTS[canvasId].destroy();
+  }
+  
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  
+  window.CHARTS[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Daily Gaming Hours',
+        data: values,
+        backgroundColor: 'rgba(255, 107, 107, 0.75)',
+        borderColor: 'rgba(255, 107, 107, 1)',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      ...chartTheme(),
+      indexAxis: 'y',  // Horizontal bars
+      scales: {
+        x: {
+          ...chartTheme().scales.x,
+          title: {
+            display: true,
+            text: 'Hours per Day',
+            color: '#8888aa',
+            font: { family: "'IBM Plex Mono'", size: 10 }
+          },
+          max: Math.ceil(Math.max(...values)) + 2
+        },
+        y: {
+          ...chartTheme().scales.y,
+          ticks: {
+            color: '#8888aa',
+            font: { family: "'IBM Plex Mono'", size: 9 }
+          }
+        }
+      },
+      plugins: {
+        ...chartTheme().plugins,
+        title: {
+          display: false
+        }
+      }
+    }
+  });
+  
+  // Show canvas, hide placeholder
+  document.getElementById('barPlaceholder').style.display = 'none';
+  document.getElementById(canvasId).style.display = 'block';
+  
+  console.log('Bar chart rendered: Top 10 gaming hours');
 }
 
 function drawScatterPlot(canvasId, data) {
@@ -1444,7 +1511,74 @@ function drawScatterPlot(canvasId, data) {
 }
 
 function drawDoughnut(canvasId, data) {
-  console.warn("⚠ Account 2: drawDoughnut() not implemented yet.");
+  if (!data || data.length === 0) {
+    console.warn('⚠ drawDoughnut: No data');
+    return;
+  }
+  
+  // Count stress groups
+  let lowCount = 0;
+  let medCount = 0;
+  let highCount = 0;
+  
+  data.forEach(d => {
+    const stress = d.stress_level;
+    if (stress >= 0 && stress <= 3) {
+      lowCount++;
+    } else if (stress >= 4 && stress <= 6) {
+      medCount++;
+    } else if (stress >= 7) {
+      highCount++;
+    }
+  });
+  
+  const total = data.length;
+  const counts = [lowCount, medCount, highCount];
+  const labels = [`Low Stress (0-3)`, `Medium Stress (4-6)`, `High Stress (7-10)`];
+  const colors = ['#4ecdc4', '#ffd93d', '#ff6b6b'];  // Sage, Gold, Coral
+  
+  // Destroy old chart if exists
+  if (window.CHARTS[canvasId]) {
+    window.CHARTS[canvasId].destroy();
+  }
+  
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  
+  window.CHARTS[canvasId] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: counts,
+        backgroundColor: colors.map(c => c + 'CC'),  // 80% opacity
+        borderColor: colors,
+        borderWidth: 2,
+        hoverBorderWidth: 3
+      }]
+    },
+    options: {
+      ...chartTheme(),
+      cutout: '60%',
+      plugins: {
+        ...chartTheme().plugins,
+        tooltip: {
+          ...chartTheme().plugins.tooltip,
+          callbacks: {
+            label: function(ctx) {
+              const pct = ((ctx.parsed / total) * 100).toFixed(1);
+              return ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // Show canvas, hide placeholder
+  document.getElementById('doughnutPlaceholder').style.display = 'none';
+  document.getElementById(canvasId).style.display = 'block';
+  
+  console.log('Doughnut chart rendered: Stress distribution (Low/Med/High)');
 }
 
 function chartTheme() {
