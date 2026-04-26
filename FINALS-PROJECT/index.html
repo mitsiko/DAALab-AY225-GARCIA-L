@@ -481,7 +481,7 @@
     .table-scroll {
       overflow-x: auto;
       border-radius: var(--radius);
-      max-height: 500px;
+      max-height: 515px;
       overflow-y: auto;
     }
 
@@ -782,13 +782,6 @@
       <span class="owner-badge badge-s1">Account 1 · Data Engine</span>
     </div>
 
-    <div class="todo-box s1">
-      <strong>⚠ Account 1 Responsibility</strong>
-      Implement CSV loading, data cleaning, random sampling (10k), paginated table (50/page),
-      filtering (gender, age range), sorting (gaming hours, stress, depression, sleep, addiction),
-      and summary statistics cards. DO NOT modify ZONE 0 or ZONE 2 code.
-    </div>
-
     <!-- Loading state -->
     <div id="loadingState" class="loading-overlay">
       <div class="loading-spinner"></div>
@@ -879,6 +872,8 @@
         <span class="row-count" id="rowCount">— rows</span>
       </div>
 
+
+
       <div class="table-scroll">
         <table id="dataTable">
           <thead>
@@ -934,13 +929,6 @@
       <span class="owner-badge badge-s2">Account 2 · Charts</span>
     </div>
 
-    <div class="todo-box s2">
-      <strong>⚠ Account 2 Responsibility (Part A)</strong>
-      Implement <code>drawBarChart()</code>, <code>drawScatterPlot()</code>, and
-      <code>drawDoughnut()</code>. All charts use aggregated/summarized data from window.DS.
-      NEVER plot all raw rows directly.
-    </div>
-
     <div class="chart-row">
       <!-- Bar chart — Top 10 gaming hours -->
       <div class="chart-tile">
@@ -989,13 +977,6 @@
         <h2>Statistical Analysis</h2>
       </div>
       <span class="owner-badge badge-s2">Account 2 · Stats</span>
-    </div>
-
-    <div class="todo-box s2">
-      <strong>⚠ Account 2 Responsibility (Part B)</strong>
-      Implement <code>variance()</code>, <code>stdDev()</code>,
-      <code>pearsonCorr()</code>, <code>linearRegression()</code>,
-      <code>renderAnalysis(data)</code>, and <code>renderInsights(data)</code>.
     </div>
 
     <!-- Three analysis tiles -->
@@ -1410,24 +1391,35 @@ function resetTable() {
   renderTable(window.DS, 1);
 }
 
+function renderSummaryCards(data) {
+  if (!data || data.length === 0) return;
+
+  const gh  = data.map(d => d.daily_gaming_hours).filter(v => v != null && !Number.isNaN(v));
+  const dep = data.map(d => d.depression_score).filter(v => v != null && !Number.isNaN(v));
+  const str = data.map(d => d.stress_level).filter(v => v != null && !Number.isNaN(v));
+  const sl  = data.map(d => d.sleep_hours).filter(v => v != null && !Number.isNaN(v));
+  const add = data.map(d => d.addiction_level).filter(v => v != null && !Number.isNaN(v));
+
+  if (gh.length === 0) return;
+
+  document.getElementById('cardMeanGaming').textContent     = mean(gh).toFixed(1);
+  document.getElementById('cardMeanDepression').textContent = mean(dep).toFixed(2);
+  document.getElementById('cardHighStress').textContent     = Math.round((str.filter(v => v >= 7).length / (str.length || 1)) * 100) + '%';
+  document.getElementById('cardHighAddiction').textContent  = Math.round((add.filter(v => v >= 7).length / (add.length || 1)) * 100) + '%';
+  document.getElementById('cardMeanSleep').textContent      = mean(sl).toFixed(1);
+  document.getElementById('cardMeanStress').textContent     = mean(str).toFixed(2);
+
+  console.log('Summary cards updated');
+}
+
+
+
 // ── START ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   console.log('DOM ready');
   loadDataset();
 });
 
-
-// ─────────────────────────────────────────────────────────────────
-// COMMIT 4 FUNCTIONS GO HERE (applyFilterSort, resetTable)
-// ─────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────
-// COMMIT 5 FUNCTIONS GO HERE (renderSummaryCards)
-// ─────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────
-// COMMIT 6 FUNCTIONS GO HERE (error handling, edge cases)
-// ─────────────────────────────────────────────────────────────────
 
 
 /* ═══════════════════════════════════════════════════════════════════
