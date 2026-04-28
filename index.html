@@ -1286,6 +1286,11 @@ function loadDataset() {
       const sampled = sampleData(cleaned, 10000);
       window.DS_META.sampleSize = sampled.length;
 
+      // Add stable unique IDs to every row
+      sampled.forEach((row, index) => {
+        row._uid = index + 1;  // Permanent unique ID (1-based)
+      });
+
       window.DS = sampled;
       window.PAGE_STATE.filteredData = [...sampled];
       window.PAGE_STATE.totalFiltered = sampled.length;
@@ -1334,7 +1339,8 @@ function renderTable(data, page, pageSize) {
   pageData.forEach((row, i) => {
     const tr = document.createElement('tr');
     const tdIdx = document.createElement('td');
-    tdIdx.textContent = start + i + 1;
+    // Use the stable unique ID instead of row position
+    tdIdx.textContent = row._uid || (start + i + 1);
     tdIdx.style.cssText = 'color:var(--text-dim);font-size:0.65rem;';
     tr.appendChild(tdIdx);
 
@@ -1502,7 +1508,7 @@ function drawBarChart(canvasId, data) {
   const sorted = [...data].sort((a, b) => b.daily_gaming_hours - a.daily_gaming_hours);
   const top10 = sorted.slice(0, 10);
   
-  const labels = top10.map(d => `ID ${d.competitive_rank || '?'} (${d.gender || '?'})`);
+  const labels = top10.map(d => `#${d._uid || '?'} (${d.gender || '?'})`);
   const values = top10.map(d => d.daily_gaming_hours);
   
   // Destroy old chart if exists
