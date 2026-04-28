@@ -14,7 +14,7 @@
   ║  ACCOUNT 2 (Samuel Angelo Arnaiz) — Visualizations + Deep Analysis       ║
   ║                                                                          ║
   ║  Dataset: Gaming and Mental Health Behavioral Dataset                    ║
-  ║  Rows: ~1,000,000 | Sample: 10,000 | Page size: 50                       ║
+  ║  Rows: ~1,000,000 | Sample: 10,000 | Page size: 15                       ║
   ╚══════════════════════════════════════════════════════════════════════════╝
   -->
 
@@ -746,7 +746,7 @@
       <li>Create GitHub repo &amp; push foundation</li>
       <li>Implement CSV loading via PapaParse</li>
       <li>Data cleaning &amp; sampling (10k rows)</li>
-      <li>Paginated table rendering (50/page)</li>
+      <li>Paginated table rendering (15/page)</li>
       <li>Filter by gender, age range</li>
       <li>Sort by gaming hours, stress, depression, sleep, addiction</li>
       <li>Summary stats: mean gaming hrs, depression, stress, sleep, addiction</li>
@@ -1106,7 +1106,7 @@ window.CHARTS = {};
  */
 window.PAGE_STATE = {
   currentPage: 1,
-  pageSize: 50,
+  pageSize: 15,
   filteredData: [],   // currently displayed (after filter/sort)
   totalFiltered: 0
 };
@@ -1315,7 +1315,7 @@ function loadDataset() {
 
 function renderTable(data, page, pageSize) {
   page = page || 1;
-  pageSize = pageSize || 50;
+  pageSize = pageSize || 15;
   const tbody = document.getElementById('tableBody');
   if (!tbody) return;
 
